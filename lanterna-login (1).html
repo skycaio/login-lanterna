@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Acesso</title>
+<style>
+  :root{
+    --bg:#040403;
+    --amber-core:#ffe7b8;
+    --amber-mid:#f2a65a;
+    --amber-deep:#6b4017;
+    --paper:#ece3d2;
+    --paper-dim:#7d7464;
+    --accent:#d98a3d;
+    --accent-bright:#ffc97a;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    background:var(--bg);
+    overflow:hidden;
+    font-family:'Courier New', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  .scene{
+    position:relative;
+    width:100%;
+    height:100vh;
+    background:var(--bg);
+    --x:50%;
+    --y:50%;
+    --r:0px;
+    overflow:hidden;
+  }
+
+  .vignette{
+    position:absolute;
+    inset:0;
+    z-index:1;
+    pointer-events:none;
+    background:radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.55) 100%);
+  }
+
+  .form-layer{
+    position:absolute;
+    inset:0;
+    z-index:5;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+  }
+  .plate{
+    width:300px;
+    text-align:center;
+    pointer-events:auto;
+  }
+  .eyebrow{
+    display:block;
+    font-size:11px;
+    letter-spacing:4px;
+    color:var(--paper-dim);
+    margin-bottom:28px;
+    text-transform:uppercase;
+  }
+  .field{
+    margin-bottom:18px;
+    text-align:left;
+  }
+  .field input{
+    width:100%;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--paper-dim);
+    color:var(--paper);
+    font-family:inherit;
+    font-size:15px;
+    letter-spacing:1px;
+    padding:10px 2px;
+    outline:none;
+    transition:border-color 0.25s ease;
+  }
+  .field input::placeholder{
+    color:var(--paper-dim);
+    opacity:0.6;
+  }
+  .field input:focus{
+    border-bottom-color:var(--accent-bright);
+  }
+  .field input:focus-visible{
+    outline:1px dashed var(--accent-bright);
+    outline-offset:4px;
+  }
+  .btn{
+    width:100%;
+    margin-top:26px;
+    background:transparent;
+    border:1px solid var(--accent);
+    color:var(--paper);
+    font-family:inherit;
+    font-size:13px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    padding:12px 0;
+    cursor:pointer;
+    transition:background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .btn:hover{
+    background:var(--accent);
+    color:#1a1208;
+    border-color:var(--accent-bright);
+  }
+  .btn:focus-visible{
+    outline:1px dashed var(--accent-bright);
+    outline-offset:4px;
+  }
+  .btn:active{
+    transform:scale(0.98);
+  }
+  .foot{
+    margin-top:16px;
+    font-size:11px;
+    letter-spacing:1px;
+    color:var(--paper-dim);
+    cursor:pointer;
+  }
+  .status{
+    min-height:14px;
+    margin-top:14px;
+    font-size:11px;
+    letter-spacing:2px;
+    color:var(--accent-bright);
+    text-transform:uppercase;
+    opacity:0;
+    transition:opacity 0.3s ease;
+  }
+  .status.show{ opacity:1; }
+
+  .glow{
+    position:absolute;
+    inset:0;
+    z-index:8;
+    pointer-events:none;
+    background:radial-gradient(circle at var(--x) var(--y), var(--amber-core) 0%, var(--amber-mid) 16%, var(--amber-deep) 42%, transparent 68%);
+    opacity:0;
+    mix-blend-mode:screen;
+    transition:opacity 0.4s ease;
+  }
+  .glow.lit{ opacity:0.55; }
+
+  .overlay{
+    position:absolute;
+    inset:0;
+    z-index:10;
+    pointer-events:none;
+    background:#020201;
+    -webkit-mask-image:radial-gradient(circle var(--r) at var(--x) var(--y), transparent 0px, transparent calc(var(--r) * 0.5), black var(--r));
+    mask-image:radial-gradient(circle var(--r) at var(--x) var(--y), transparent 0px, transparent calc(var(--r) * 0.5), black var(--r));
+  }
+
+  .grain{
+    position:absolute;
+    inset:0;
+    z-index:11;
+    pointer-events:none;
+    opacity:0.035;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.4) 0px, transparent 1px, transparent 2px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.4) 0px, transparent 1px, transparent 2px);
+  }
+
+  .lantern{
+    position:absolute;
+    right:9%;
+    bottom:14%;
+    z-index:20;
+    width:46px;
+    height:46px;
+    padding:0;
+    border:none;
+    background:transparent;
+    cursor:grab;
+    border-radius:50%;
+    touch-action:none;
+    user-select:none;
+  }
+  .lantern.dragging{
+    cursor:grabbing;
+  }
+  .lantern svg{
+    width:100%;
+    height:100%;
+    filter:drop-shadow(0 0 3px rgba(242,166,90,0.55)) drop-shadow(0 0 9px rgba(242,166,90,0.25));
+    animation:ember 2.6s ease-in-out infinite;
+    pointer-events:none;
+  }
+  .lantern:focus-visible{
+    outline:1px dashed var(--accent-bright);
+    outline-offset:6px;
+  }
+  .lantern.lit svg{
+    animation:none;
+    filter:drop-shadow(0 0 5px rgba(255,201,122,0.85)) drop-shadow(0 0 14px rgba(242,166,90,0.5));
+  }
+  @keyframes ember{
+    0%,100%{ filter:drop-shadow(0 0 2px rgba(242,166,90,0.4)) drop-shadow(0 0 7px rgba(242,166,90,0.18)); }
+    50%{ filter:drop-shadow(0 0 4px rgba(242,166,90,0.7)) drop-shadow(0 0 13px rgba(242,166,90,0.32)); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .lantern svg{ animation:none; }
+  }
+
+  .sr-only{
+    position:absolute;
+    width:1px;height:1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+  }
+</style>
+</head>
+<body>
+
+<div class="scene" id="scene">
+  <h1 class="sr-only">Página de login no escuro: encontre a lanterna no canto inferior direito e mova-a sobre a tela para revelar o formulário de acesso.</h1>
+
+  <div class="vignette"></div>
+
+  <div class="form-layer">
+    <div class="plate">
+      <span class="eyebrow">acesso restrito</span>
+      <div class="field">
+        <input type="text" id="user" placeholder="usuário ou e-mail" autocomplete="off">
+      </div>
+      <div class="field">
+        <input type="password" id="pass" placeholder="senha" autocomplete="off">
+      </div>
+      <button type="button" class="btn" id="submit">entrar</button>
+      <div class="foot" id="forgot">esqueceu a senha?</div>
+      <div class="status" id="status">acesso concedido</div>
+    </div>
+  </div>
+
+  <div class="glow" id="glow"></div>
+  <div class="overlay" id="overlay"></div>
+  <div class="grain"></div>
+
+  <button class="lantern" id="lantern" aria-label="Pegar a lanterna">
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g transform="rotate(35 32 32)">
+        <rect x="22" y="10" width="20" height="10" rx="2" fill="#3a332a" stroke="#7d6a4a" stroke-width="1.2"/>
+        <rect x="20" y="20" width="24" height="30" rx="3" fill="#2c2620" stroke="#7d6a4a" stroke-width="1.2"/>
+        <circle cx="32" cy="15" r="5" fill="#f2a65a" opacity="0.9"/>
+        <circle cx="32" cy="15" r="9" fill="#f2a65a" opacity="0.25"/>
+      </g>
+    </svg>
+  </button>
+</div>
+
+<script>
+(function(){
+  var scene = document.getElementById('scene');
+  var lantern = document.getElementById('lantern');
+  var glow = document.getElementById('glow');
+  var statusEl = document.getElementById('status');
+  var submitBtn = document.getElementById('submit');
+
+  var dragging = false;
+  var isLit = false;
+  var baseR = 150;
+  var lx, ly;
+  var offsetX = 0, offsetY = 0;
+
+  function initPosition(){
+    var rect = lantern.getBoundingClientRect();
+    lx = rect.left + rect.width/2;
+    ly = rect.top + rect.height/2;
+    lantern.style.right = 'auto';
+    lantern.style.bottom = 'auto';
+    lantern.style.left = (lx - rect.width/2) + 'px';
+    lantern.style.top = (ly - rect.height/2) + 'px';
+  }
+  initPosition();
+
+  function moveLanternTo(clientX, clientY){
+    var sceneRect = scene.getBoundingClientRect();
+    var half = lantern.offsetWidth/2;
+    var nx = clientX - offsetX;
+    var ny = clientY - offsetY;
+    nx = Math.max(sceneRect.left + half, Math.min(sceneRect.right - half, nx));
+    ny = Math.max(sceneRect.top + half, Math.min(sceneRect.bottom - half, ny));
+    lx = nx; ly = ny;
+    lantern.style.left = (nx - half) + 'px';
+    lantern.style.top = (ny - half) + 'px';
+    scene.style.setProperty('--x', nx + 'px');
+    scene.style.setProperty('--y', ny + 'px');
+  }
+
+  function turnOn(){
+    if (isLit) return;
+    isLit = true;
+    lantern.classList.add('lit');
+    glow.classList.add('lit');
+    scene.style.setProperty('--r', baseR + 'px');
+  }
+
+  lantern.addEventListener('pointerdown', function(e){
+    dragging = true;
+    lantern.classList.add('dragging');
+    lantern.setPointerCapture(e.pointerId);
+    var rect = lantern.getBoundingClientRect();
+    offsetX = e.clientX - (rect.left + rect.width/2);
+    offsetY = e.clientY - (rect.top + rect.height/2);
+    turnOn();
+    moveLanternTo(e.clientX, e.clientY);
+  });
+
+  lantern.addEventListener('pointermove', function(e){
+    if (dragging) moveLanternTo(e.clientX, e.clientY);
+  });
+
+  function endDrag(e){
+    if (!dragging) return;
+    dragging = false;
+    lantern.classList.remove('dragging');
+    try{ lantern.releasePointerCapture(e.pointerId); }catch(err){}
+  }
+  lantern.addEventListener('pointerup', endDrag);
+  lantern.addEventListener('pointercancel', endDrag);
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function tick(t){
+    if (isLit && !reduceMotion){
+      var flicker = Math.sin(t/140) * 4 + (Math.random() - 0.5) * 6;
+      var extra = dragging ? 0 : 0;
+      scene.style.setProperty('--r', Math.max(60, baseR + flicker + extra) + 'px');
+      glow.style.opacity = (0.5 + Math.sin(t/220) * 0.06 + (Math.random() - 0.5) * 0.04).toFixed(2);
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  submitBtn.addEventListener('click', function(){
+    statusEl.textContent = 'verificando...';
+    statusEl.classList.add('show');
+    setTimeout(function(){
+      statusEl.textContent = 'acesso concedido';
+    }, 900);
+  });
+})();
+</script>
+
+</body>
+</html>
